@@ -53,7 +53,8 @@
       (setf (aref *arr* (floor (/ (+ x *x_cor*) *size*)) (floor (/ (+ y *y_cor*) *size*))) 0)
       (setf (aref *arr* (floor (/ (+ x *x_cor*) *size*)) (floor (/ (+ y *y_cor*) *size*))) 1)))
    )
-
+   (:mouse-wheel-event ()
+    (format t "hehey~%"))
    (:key-down-event (:key key)
     (when (sdl:key= key :sdl-key-d)
      (if (< (* -1 *x_cor*) (- (* *size* a) 500))
@@ -101,6 +102,7 @@
 	 (sdl:clear-display sdl:*black*)
 	 (dotimes (i a)
 	  (dotimes (j a)
+;	   (sdl:draw-rectangle (sdl:rectangle :x (+ *x_cor* (* *size* i)) :y (+ *y_cor* (* *size* j)) :w *size* :h *size* :fp nil) :color sdl:*black*)
 	   (sdl:draw-box (sdl:rectangle :x (+ *x_cor* (* *size* i)) :y (+ *y_cor* (* *size* j)) :w *size* :h *size* :fp nil) :color (if (= (aref *arr* i j) 1) sdl:*white* (if (= (aref *arr* i j) 2) sdl:*cyan* sdl:*green*)))))
 	 (sdl:update-display)
 	)
@@ -108,4 +110,56 @@
 	  )
 	   )
 
-	    (sb-int:with-float-traps-masked (:invalid :inexact :overflow) (game 100 100))
+(asdf:load-system :unix-opts)
+
+	(opts:define-opts
+	 (:name :width
+	  :description "width of the grid"
+	  :long "width"
+	  :arg-parser #'parse-integer) ;; <- takes an argument
+	 (:name :height
+	  :description "height of the grid"
+	  :long "height"
+	  :arg-parser #'parse-integer) ;; <- takes an argument
+	 (:name :help
+	  :description "show this help message and exit"
+	  :short #\h
+	  :long "help"))
+
+(defun unknown-option (condition)
+ (format t "warning: ~s option is unknown!~%" (opts:option condition))
+ (invoke-restart 'opts:skip-option)
+ )
+
+	(defmacro when-option ((options opt) &body body)
+	 `(let ((it (getf ,options ,opt)))
+		 (when it
+		  ,@body)))
+
+(sb-int:with-float-traps-masked (:invalid :inexact :overflow)	 (multiple-value-bind (options)
+	  ;errors
+	  (handler-case
+	   (handler-bind ((opts:unknown-option #'unknown-option))
+	    (opts:get-opts))
+	   (opts:missing-arg (condition)
+	    (format t "fatal: option ~s needs an argument!~%"
+	     (opts:option condition)))
+	   (opts:arg-parser-failed (condition)
+	    (format t "fatal: cannot parse ~s as argument of ~s~%"
+	     (opts:raw-arg condition)
+	     (opts:option condition))))
+	  ;normal cases
+	  (when-option (options :help)
+	   ;   "help"
+	   (opts:describe
+	    :prefix "The best program's usage"
+	    :suffix "type both width and height please"
+	    :usage-of "gof.lisp")
+(opts:exit 1))
+	(if (and (getf options :width) (getf options :height))
+	 (game (getf options :width) (getf options :height))
+	  (opts:describe
+	   :prefix "The best program's usage"
+	   :suffix "type both width and height please"
+	   :usage-of "gof.lisp"))))
+
