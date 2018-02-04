@@ -6,7 +6,7 @@
 	(defvar *tmp*)
 	(defvar *counter* 0)
 	(defvar *dur* 10)
-	(defvar *pause* -1)
+	(defvar *pause* 1)
 (defvar *size* 5)
 
 (defun gol(arr tmp)
@@ -18,12 +18,12 @@
 	     do (if (and (> (+ i q) 0) (> (+ j k) 0));if we're not out of boundaries
 		     (if (and
 			  (or (not (= q 0)) (not (= k 0)));it's not the current point itself (offsets r 0 and 0)
-			  (not (= (aref tmp (+ i q) (+ j k)) 0)));and if that neighbour is not dead
+			  (= (aref tmp (+ i q) (+ j k)) 1));and if that neighbour is not dead
 		      (incf s)))));inc sum
 
-    (if (not (= (aref tmp i j) 0));if cur sell isn't dead
+    (if (= (aref tmp i j) 1);if cur sell isn't dead
      (if (or (< s 2) (> s 3));and it has less then 2 or more than 3 neighbours
-      (setf (aref arr i j) 0));it dies(
+      (setf (aref arr i j) 2));it dies(
 	      (if (= s 3);if it's dead and has 3 neighbours
 	       (setf (aref arr i j) 1)));it lives!
     ))))
@@ -78,6 +78,11 @@
 	(when (sdl:key= key :sdl-key-comma)
 	 (if (< *dur* 120)
 	  (setq *dur* (+ *dur* 10))))
+	(when (sdl:key= key :sdl-key-r)
+	 (dotimes (i (- (array-dimension *arr* 0) 1))
+	  (dotimes (j (- (array-dimension *arr* 1) 1))
+	   (setf (aref *arr* i j) 0)))
+	 (setf *pause* 1));randomly fill array
 	(when (sdl:key= key :sdl-key-p)
 	 (setq *pause* (* *pause* -1))
 	 (sleep 0.001))
@@ -96,7 +101,7 @@
 	 (sdl:clear-display sdl:*black*)
 	 (dotimes (i a)
 	  (dotimes (j a)
-	   (sdl:draw-box (sdl:rectangle :x (+ *x_cor* (* *size* i)) :y (+ *y_cor* (* *size* j)) :w *size* :h *size* :fp nil) :color (if (= (aref *arr* i j) 1) sdl:*white* sdl:*cyan*))))
+	   (sdl:draw-box (sdl:rectangle :x (+ *x_cor* (* *size* i)) :y (+ *y_cor* (* *size* j)) :w *size* :h *size* :fp nil) :color (if (= (aref *arr* i j) 1) sdl:*white* (if (= (aref *arr* i j) 2) sdl:*cyan* sdl:*green*)))))
 	 (sdl:update-display)
 	)
 	 )
